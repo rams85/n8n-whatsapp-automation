@@ -1,57 +1,188 @@
-# WhatsApp Message Automation with n8n
+# WhatsApp Message Automation using n8n
 
-A workflow automation project built using **n8n, React, Google Sheets, and the Meta WhatsApp Cloud API** to automate scheduled WhatsApp messaging.
+An n8n-based WhatsApp messaging automation workflow that exposes a simple REST API endpoint and sends WhatsApp text messages through the **WhatsApp Cloud API**.
 
-This project was created as a hands-on learning project to understand how **workflow automation, REST APIs, webhooks, OAuth2 authentication, scheduling, conditional logic, and external service integrations** work together in a real-world application.
+The workflow receives a phone number and message through an HTTP `POST` request, sends the message using Meta's WhatsApp Graph API, and returns the WhatsApp message ID as a JSON response.
 
 ---
 
-## 🚀 Project Overview
+## 📌 Project Overview
 
-The application allows customer information to be maintained in a Google Sheet and uses n8n to automatically process customer records and send WhatsApp messages through the **Meta WhatsApp Cloud API**.
+This project demonstrates how to build a simple WhatsApp messaging API using:
 
-The workflow supports both **manual execution** for testing and **scheduled execution** for automated messaging.
+- **n8n** - Workflow automation platform
+- **WhatsApp Cloud API** - WhatsApp messaging API provided by Meta
+- **Webhook** - Receives incoming HTTP requests
+- **HTTP Request node** - Sends the WhatsApp message
+- **Respond to Webhook node** - Returns the API response
 
-### Architecture
+### Workflow
 
 ```text
-                         ┌─────────────────────┐
-                         │      React App      │
-                         │   Manual Testing    │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │        n8n          │
-                         │   Workflow Engine   │
-                         └──────────┬──────────┘
-                                    │
-                 ┌──────────────────┴──────────────────┐
-                 │                                     │
-                 ▼                                     ▼
-        ┌─────────────────┐                  ┌─────────────────┐
-        │ Manual Trigger  │                  │Schedule Trigger │
-        └────────┬────────┘                  └────────┬────────┘
-                 │                                    │
-                 └────────────────┬───────────────────┘
-                                  ▼
-                         ┌─────────────────┐
-                         │  Google Sheets  │
-                         │ Customer Data   │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │   IF Condition  │
-                         │  active = Yes   │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │  HTTP Request   │
-                         │ WhatsApp Cloud  │
-                         │      API        │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                              📱 WhatsApp
+Client / Application
+        │
+        │ POST /webhook/whatsapp-send
+        │
+        ▼
+┌─────────────────────────┐
+│   Webhook                │
+│   WhatsApp-send          │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│   HTTP Request           │
+│   WhatsApp Cloud API     │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│   Respond to Webhook     │
+│   JSON Response           │
+└─────────────────────────┘
+
+**🚀 Features**
+Receive WhatsApp message requests through a REST API endpoint.
+Accept phone number and message dynamically.
+Automatically remove non-numeric characters from the phone number.
+Send text messages through WhatsApp Cloud API.
+Authenticate using Bearer Token authentication.
+Return the WhatsApp message ID after successful delivery request.
+Can be integrated with websites, WordPress, applications, CRM systems, forms, or other automation workflows.
+
+**🛠️ Technologies Used
+**n8n	Workflow: For automation
+WhatsApp Cloud API: For Sending WhatsApp messages
+Meta Graph API:	WhatsApp API endpoint
+Webhook	Receive API requests
+HTTP Request:	Call WhatsApp API
+JSON:	Request/response format
+Docker:	Optional n8n deployment
+
+**📋 Workflow Nodes**
+The workflow contains three nodes.
+
+1. Webhook - WhatsApp-send
+
+The Webhook node acts as the API entry point.
+
+**Configuration**
+HTTP Method: POST
+Path: /whatsapp-send
+Response Mode: Using Respond to Webhook Node
+
+**The webhook expects a JSON request body containing:**
+
+{
+  "phone": "+91 9XXXXXXXXX",
+  "message": "Hello! This message was sent using n8n."
+}
+
+**2. HTTP Request - WhatsApp Cloud API**
+
+The HTTP Request node sends the received message to Meta's WhatsApp Cloud API.
+
+API Endpoint
+POST https://graph.facebook.com/version_number/{PHONE_NUMBER_ID}/messages
+
+Replace:
+{PHONE_NUMBER_ID}
+with your WhatsApp Business phone number ID.
+
+Authentication
+
+The workflow uses:
+
+Bearer Token Authentication
+
+The Bearer Token should be stored securely in n8n credentials.
+
+Do not hard-code the access token inside the workflow.
+
+Request Body
+
+The workflow sends the following JSON:
+
+{
+  "messaging_product": "whatsapp",
+  "to": "9876543210",
+  "type": "text",
+  "text": {
+    "body": "Hello! This message was sent using n8n."
+  }
+}
+
+The phone number is processed using:
+
+{{ $json.body.phone.replace(/\D/g, '') }}
+
+This removes characters such as:
+
++
+-
+(
+)
+spaces
+
+For example:
++91 9XXXX-XXXXX
+
+becomes:
+919XXXXXXXXX
+
+curl -X POST "http://localhost:5678/webhook/whatsapp-send" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone": "+919XXXXXXXXX",
+    "message": "Hello from n8n!"
+  }'
+
+**  ✅ Expected Response **
+If the WhatsApp API accepts the message, n8n returns:
+
+{
+  "success": true,
+  "message": "WhatsApp message sent successfully!",
+  "messageId": "wamid.HBgL..."
+}
+
+The messageId is generated by WhatsApp.
+
+Webhook WhatsApp-send
+        │
+        ▼
+HTTP Request
+        │
+        ▼
+Respond to Webhook
+
+**🔄 Example Integration**
+
+This workflow can be called from many different applications.
+
+For example:
+
+WordPress
+    │
+    │ HTTP POST
+    ▼
+n8n Webhook
+    │
+    ▼
+WhatsApp Cloud API
+    │
+    ▼
+Customer's WhatsApp
+
+It can also be integrated with:
+
+WordPress websites
+Contact forms
+CRM systems
+E-commerce applications
+Custom PHP applications
+Node.js applications
+Python applications
+Lead generation systems
+Customer notification systems
+Order management systems
