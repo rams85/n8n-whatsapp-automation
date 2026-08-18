@@ -1,0 +1,101 @@
+{
+  "name": "WhatsApp Message Automation - Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "=/whatsapp-send",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dd643f5f-c8e2-4c3d-b1d8-d50b2b693bd8",
+      "name": "Webhook WhatsApp-send",
+      "webhookId": "53e71a8b-a136-457e-9261-83d7d505481e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v25.0/1342288995623311/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.body.phone.replace(/\\D/g, '') }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"{{ $json.body.message }} \"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "a8943d9d-d405-40a1-a3a1-40243d236007",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "aUhAb0nFg6FKaSPW",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"WhatsApp message sent successfully!\",\n  \"messageId\": \"{{ $json.messages[0].id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "603ad10c-6e17-41e7-be0e-11a3a40a61ed",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook WhatsApp-send": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cfceb566-deb3-47fc-b7ee-8fdaf4c6a8b1",
+  "meta": {
+    "instanceId": "66050f725a2e19c6065972e1d9086ce568f206616d26f1990c19f49d4e005e7b"
+  },
+  "nodeGroups": [],
+  "id": "BRXIPBi49nscOwAT",
+  "tags": []
+}
